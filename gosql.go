@@ -7,7 +7,7 @@ import (
   "fmt"
   "log"
   "database/sql"
-  _ "github.com/go-sql-driver/mysql"
+  _ "github.com/lib/pq"
 )
 
 type User struct {
@@ -17,7 +17,7 @@ type User struct {
 
 func fetchUserById(db *sql.DB, id int) (*User, error) {
   var name string
-  err := db.QueryRow("SELECT name from users WHERE id = ?", id).Scan(&name)
+  err := db.QueryRow("SELECT name from users WHERE id = $1", id).Scan(&name)
   if err != nil {
     log.Fatal(err)
     return nil, err
@@ -25,68 +25,21 @@ func fetchUserById(db *sql.DB, id int) (*User, error) {
   return &User{Id: id, Name: name}, nil
 }
 
-func getUserNameById(db *sql.DB, id int) (string, error) {
-  var name string
-
-  stmt, err := db.Prepare("SELECT name from users WHERE id = ?")
-  if err != nil {
-    log.Fatal(err)
-    return "", err
-  }
-  defer stmt.Close()
-
-  rows, err := stmt.Query(id)
-  if err != nil {
-    log.Fatal(err)
-    return "", err
-  }
-
-  defer rows.Close()
-
-  for rows.Next() {
-    err := rows.Scan(&name)
-    if err != nil {
-      log.Fatal(err)
-      return "", err
-    }
-    log.Println("users", id, name)
-  }
-
-  err = rows.Err()
-  if err != nil {
-    log.Fatal(err)
-    return "", err
-  }
-
-  return name, nil
-}
-
 func addUser(db *sql.DB, desired_name string) *User {
   var (
     id int
     name string
   )
-  stmt, err := db.Prepare("INSERT INTO users(name) VALUES(?)")
+  stmt, err := db.Prepare("INSERT INTO users(name) VALUES($1) RETURNING id, name")
   if err != nil {
     log.Fatal(err)
     return nil
   }
-  res, err := stmt.Exec(desired_name)
+  err = stmt.QueryRow(desired_name).Scan(&id, &name)
   if err != nil {
     log.Fatal(err)
     return nil
   }
-  lastId, err := res.LastInsertId()
-  if err != nil {
-    log.Fatal(err)
-    return nil
-  }
-  err = db.QueryRow("SELECT id, name FROM users WHERE id = ?", lastId).Scan(&id, &name)
-  if err != nil {
-    log.Fatal(err)
-    return nil
-  }
-
   return &User{Id: id, Name: name}
 }
 
@@ -104,9 +57,9 @@ func initDatabase() *sql.DB {
   password := os.Getenv("DB_PASSWORD")
   database := os.Getenv("DB_NAME")
 
-  database_url := fmt.Sprintf("%v:%v@tcp(127.0.0.1:3306)/%v", username, password, database)
+  database_url := fmt.Sprintf("postgres://%v:%v@127.0.0.1:5432/%v?sslmode=disable", username, password, database)
 
-  db, err := sql.Open("mysql", database_url)
+  db, err := sql.Open("postgres", database_url)
   if err != nil {
     log.Fatal(err)
   }
