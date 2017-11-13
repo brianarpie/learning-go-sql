@@ -1,6 +1,7 @@
 package main
 
 import (
+  "time"
   "strconv"
   "os"
   "fmt"
@@ -94,14 +95,27 @@ func (u *User) String() string {
 }
 
 func printError(err error) {
-  fmt.Println("SQL GO Error:", err)
+  dateTimeFormat := "2006/01/02 15:04:05"
+  fmt.Printf("%v [SQL GO] Error: %v\n", time.Now().Format(dateTimeFormat), err)
 }
 
-func main() {
-  db, err := sql.Open("mysql", "username:password@tcp(127.0.0.1:3306)/hello")
+func initDatabase() *sql.DB {
+  username := os.Getenv("DB_USERNAME")
+  password := os.Getenv("DB_PASSWORD")
+  database := os.Getenv("DB_NAME")
+
+  database_url := fmt.Sprintf("%v:%v@tcp(127.0.0.1:3306)/%v", username, password, database)
+
+  db, err := sql.Open("mysql", database_url)
   if err != nil {
     log.Fatal(err)
   }
+
+  return db
+}
+
+func main() {
+  db := initDatabase()
 
   args := os.Args[1:]
   switch args[0] {
