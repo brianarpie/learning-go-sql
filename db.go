@@ -33,6 +33,16 @@ func fetchUserById(db *sql.DB, id int) (*User, error) {
   return &User{Id: id, Name: name}, nil
 }
 
+func fetchUserByName(db *sql.DB, name string) (*User, error) {
+  var id int
+  err := db.QueryRow("SELECT id FROM users WHERE name = $1", name).Scan(&id)
+  if err != nil {
+    log.Fatal(err)
+    return nil, err
+  }
+  return &User{Id: id, Name: name}, nil
+}
+
 func addUser(db *sql.DB, desired_name string) *User {
   var (
     id int

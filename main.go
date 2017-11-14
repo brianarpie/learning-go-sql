@@ -34,15 +34,24 @@ func main() {
     case "fetch":
       switch args[1] {
         case "user":
-          intId, err := strconv.Atoi(args[2])
-          if err != nil {
-            printError(err)
+          switch args[2] {
+            case "id":
+              intId, err := strconv.Atoi(args[3])
+              if err != nil {
+                printError(err)
+              }
+              user, err := fetchUserById(db, intId)
+              if err != nil {
+                printError(err)
+              }
+              fmt.Println("User Fetched", user)
+            case "name":
+              user, err := fetchUserByName(db, args[3])
+              if err != nil {
+                printError(err)
+              }
+              fmt.Println("User Fetched", user)
           }
-          user, err := fetchUserById(db, intId)
-          if err != nil {
-            printError(err)
-          }
-          fmt.Println("User Fetched", user)
       }
   }
   
