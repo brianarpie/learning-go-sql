@@ -40,11 +40,13 @@ func main() {
               if err != nil {
                 printError(err)
               }
-              user, err := fetchUserById(db, intId)
+              newRelation := &relation{db:db}
+              query := newRelation.Sel("users", "name").Where("id", intId)
+              result, err := query.Exec()
               if err != nil {
                 printError(err)
               }
-              fmt.Println("User Fetched", user)
+              fmt.Println("User Fetched", result)
             case "name":
               user, err := fetchUserByName(db, args[3])
               if err != nil {
